@@ -1,0 +1,42 @@
+<h1>Phishing Dashboard</h1>
+
+<form method="post">
+    <input name="url" placeholder="Enter URL">
+    <button>Analyze</button>
+</form>
+
+{% if score %}
+<h2 style="color:{{color}}">
+    {{status}} ({{score}}%)
+</h2>
+{% endif %}
+
+<h3>History</h3>
+<table>
+<tr><th>URL</th><th>Score</th><th>Status</th><th>Date</th></tr>
+{% for h in history %}
+<tr>
+<td>{{h[0]}}</td>
+<td>{{h[1]}}</td>
+<td>{{h[2]}}</td>
+<td>{{h[3]}}</td>
+</tr>
+{% endfor %}
+</table>
+
+<!-- Chart -->
+<canvas id="chart"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+var ctx = document.getElementById('chart');
+new Chart(ctx, {
+    type: 'pie',
+    data: {
+        labels: ['Safe','Suspicious','Dangerous'],
+        datasets: [{
+            data: [30,20,50]
+        }]
+    }
+});
+</script>

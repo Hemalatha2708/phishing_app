@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Phishing URL Detector</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .danger { color: white; background-color: #ef4444; padding: 10px; border-radius: 8px; }
+        .safe { color: white; background-color: #22c55e; padding: 10px; border-radius: 8px; }
+        .warning { color: black; background-color: #facc15; padding: 10px; border-radius: 8px; }
+
+        .url-box { margin-top: 15px; word-break: break-all; }
+        .warning-msg { font-weight: bold; margin-top: 10px; }
+    </style>
+</head>
+<body>
+<div class="auth-container">
+    <div class="auth-card">
+        <h2>Phishing URL Detector</h2>
+
+        <form method="POST" action="{{ url_for('result') }}">
+            <!-- fake fields to prevent autofill -->
+            <input type="text" name="fakeuser" style="display:none">
+            <input type="password" name="fakepass" style="display:none">
+
+            <div class="input-group">
+                <input type="text" name="url" placeholder="Paste your URL here" required autocomplete="off">
+            </div>
+            <button type="submit">Predict</button>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const urlInput = document.querySelector('input[name="url"]');
+    if(urlInput) urlInput.value = ""; // clear input every time page loads
+});
+</script>
