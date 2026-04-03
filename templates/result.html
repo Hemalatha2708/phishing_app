@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Result</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial;
+            color: white;
+        }
+
+        .box {
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            width: 60%;
+            max-width: 500px;
+        }
+
+        .safe { background: #22c55e; }
+        .warning { background: #facc15; color: black; }
+        .danger { background: #ef4444; }
+
+        a {
+            color: white;
+            font-weight: bold;
+            word-break: break-all;
+        }
+
+        .warning-text {
+            margin-top: 15px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="auth-container">
+    <div class="auth-card
+        {% if result == 'Safe' %}safe
+        {% elif result == 'Suspicious' %}warning
+        {% else %}danger
+        {% endif %}">
+        
+        <h2>{{ result }}</h2>
+
+        <p>
+            <a href="{{ url }}" target="_blank">{{ url }}</a>
+        </p>
+
+        {% if warning %}
+            <p class="warning-text">{{ warning }}</p>
+        {% endif %}
+    </div>
+</div>
+
+</body>
+</html>
