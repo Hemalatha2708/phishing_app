@@ -1,0 +1,68 @@
+Plan: Comprehensive Phishing App Code Review & Refactor
+TL;DR: Conduct a full code review targeting security vulnerabilities (hardcoded credentials, CSRF), code quality (DRY violations, missing validation), and performance. Deliver refactored code ready to implement, findings document, and prioritized issues.
+
+Issues Discovered (Severity-Ranked)
+🔴 CRITICAL (Security):
+
+Hardcoded database password in db.py
+Hardcoded secret key ("secret123") in app.py
+Missing CSRF protection on all forms
+No input validation for URLs before processing
+test_features.py imports non-existent features module
+🟠 HIGH (Code Quality & Bugs):
+
+extract_features() duplicated in app.py and train_model.py (DRY violation)
+No error handling for feature extraction, model loading, or DB queries
+No logging for security events or errors
+Missing requirements.txt
+No explicit database schema
+🟡 MEDIUM (Performance):
+
+ML models loaded at startup (blocking I/O)
+Regex patterns recompiled on each request
+No database connection pooling
+No caching for history queries
+Implementation Roadmap
+Phase 1: Security Hardening (blocks rest)
+
+Create config.py with environment-based configuration (DB credentials, secret key)
+Extract extract_features() to new features.py module (single source of truth)
+Add URL input validation
+Add Flask-WTF CSRF protection to all forms
+Update all files to use config instead of hardcoded values
+Phase 2: Code Quality (can start after Phase 1, ~parallel)
+
+Add comprehensive error handling throughout
+Set up logging for security events and errors
+Add docstrings to all functions
+Create requirements.txt and schema.sql
+Create validation module for emails, URLs, passwords
+Phase 3: Performance (depends on Phase 1-2)
+
+Compile regex patterns once in features.py
+Add database connection pooling
+Lazy-load ML models (load on first use)
+Add caching for prediction history
+Phase 4: Testing (ongoing per phase)
+
+Fix test_features.py imports and add assertions
+Create integration tests
+Security testing (SQL injection, CSRF, etc.)
+New & Modified Files
+Create:
+
+config.py — Env-based configuration
+features.py — Consolidated feature extraction
+validation.py — Input validation functions
+requirements.txt — Dependencies
+schema.sql — Database schema
+Modify:
+
+db.py, app.py, auth.py, train_model.py, test_features.py, templates (add CSRF tokens)
+Verification Points
+No hardcoded credentials remain
+All functions have docstrings
+Feature extraction logic exists only in features.py
+Prediction workflow works end-to-end
+test_features.py runs without import errors
+All inputs validated before processing
