@@ -11,3 +11,5 @@ node_modules/
 # Ignore build artifacts
 dist/
 build/
+.pyc
+__pycache__/
