@@ -1,4 +1,4 @@
-*.pk1
+*.pkl
 *.csv
 .env
 *.log
