@@ -10,12 +10,16 @@
 
         .url-box { margin-top: 15px; word-break: break-all; }
         .warning-msg { font-weight: bold; margin-top: 10px; }
+        
     </style>
 </head>
-<body>
+
+<body class="predict-page">
+<h1 class="main-title">Phishing URL Detector</h1>
 <div class="auth-container">
+    
     <div class="auth-card">
-        <h2>Phishing URL Detector</h2>
+        
 
         <form method="POST" action="{{ url_for('result') }}">
             <!-- fake fields to prevent autofill -->
@@ -29,7 +33,7 @@
         </form>
     </div>
 </div>
-
+</body>
 <script>
 document.addEventListener("DOMContentLoaded", () => {
     const urlInput = document.querySelector('input[name="url"]');

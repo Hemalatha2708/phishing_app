@@ -93,8 +93,9 @@
     position: relative;
     width: 100%;
     height: 100vh;
-
+    margin:0;
     display: flex;
+    font-family: Arial;
     align-items: center;
     justify-content: flex-end;
 
@@ -266,3 +267,118 @@
     margin-top: 15px;
     font-size: 18px;
 }
+/* Custom Alert Box */
+.custom-alert {
+    display: none;
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #222;
+    color: #fff;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    z-index: 1000;
+    width: 250px;
+    top: 10%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* Alert text */
+.custom-alert p {
+    margin: 0;
+    font-size: 14px;
+    
+}
+
+/* Button */
+.custom-alert button {
+    display: block;
+    margin-left: auto;   /* pushes button to right */
+    margin-top: 15px;    /* space from text */
+    padding: 6px 12px;
+    border: none;
+    background: #00c853;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+/* Button hover */
+.custom-alert button:hover {
+    background: #009624;
+}
+.alert-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.4);
+    z-index: 999;
+}
+/* Hide default browser password eye (Edge/Chrome) */
+
+.toggle-password {
+    cursor: pointer;
+}
+body.predict-page .auth-container {
+    background: url('/static/images/bg5.jpg') no-repeat center center/cover;
+}
+
+body.predict-page .auth-container::before {
+    display: none;
+}
+/* ✅ Move glass box to right ONLY for predict page */
+body.predict-page .auth-container {
+    justify-content: flex-end;
+    padding-right: 80px;
+}
+
+/* ✅ Remove left shift */
+body.predict-page .auth-card {
+    transform: translate(-280px);
+    width: 420px;     /* 👈 increase width */
+    padding: 40px;
+}
+/* Title on image */
+.main-title {
+    position: fixed;   /* 🔥 key fix */
+    top: 280px;
+    left: 67%;
+    transform: translateX(-50%);
+
+    color: white;
+    font-size: 42px;
+    font-weight: bold;
+
+    text-shadow: 0 0 15px rgba(0,0,0,0.8);
+    z-index: 9999;   /* 🔥 ensures it's on top */
+}
+.navbar {
+    position: absolute;
+    top: 20px;            /* move down from top */
+    right: 40px;
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    padding: 15px;
+    z-index: 10;
+  
+}
+
+.navbar a {
+    color: white;
+    text-decoration: none;
+
+    letter-spacing: 1px;
+    transition: 0.3s;
+}
+
+.navbar a:hover {
+    color: #facc15;
+    transform: scale(1.1);
+}
+

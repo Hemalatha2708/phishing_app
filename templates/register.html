@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -16,18 +15,50 @@
             <input type="text" name="username" placeholder="Username" autocomplete="off" required>
             <input type="password" name="password" id="password" placeholder="Password" autocomplete="new-password" required>
             <input type="email" name="email" placeholder="Email" required>
-            
 
             <button type="submit">Sign Up</button>
         </form>
 
         <p>
-    Already have an account? 
-    <a href="{{ url_for('login') }}">Login</a>
-</p>
+            Already have an account? 
+            <a href="{{ url_for('login') }}">Login</a>
+        </p>
 
     </div>
 </div>
+
+<!-- Custom Alert -->
+<div id="customAlert" class="custom-alert">
+    <p id="alertMsg"></p>
+    <button onclick="closeAlert()">OK</button>
+</div>
+
+<script>
+function showAlert(message, redirect=false) {
+    document.getElementById("alertMsg").innerText = message;
+    document.getElementById("customAlert").style.display = "block";
+    window.shouldRedirect = redirect;
+}
+
+function closeAlert() {
+    document.getElementById("customAlert").style.display = "none";
+    if (window.shouldRedirect) {
+        window.location.href = "/login";
+    }
+}
+</script>
+
+{% if exists %}
+<script>
+showAlert("❌ Username already exists!", true);
+</script>
+{% endif %}
+
+{% if success %}
+<script>
+showAlert("✅ Account created successfully!", true);
+</script>
+{% endif %}
 
 </body>
 </html>

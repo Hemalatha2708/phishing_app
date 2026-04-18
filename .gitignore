@@ -1,0 +1,13 @@
+*.pk1
+*.csv
+.env
+*.log
+*.bak
+*.tmp
+*.swp
+
+# Ignore node_modules
+node_modules/
+# Ignore build artifacts
+dist/
+build/

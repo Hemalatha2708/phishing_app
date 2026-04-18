@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Your History</title>
+    <style>
+        body {
+            font-family: Arial;
+            text-align: center;
+            padding: 40px;
+        }
+
+        table {
+            width: 80%;
+            margin: auto;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            border: 1px solid #ccc;
+        }
+
+        .safe { color: #22c55e; font-weight: bold; }
+        .suspicious { color: #f59e0b; font-weight: bold; }
+        .dangerous { color: #ef4444; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<h2>Your Scan History</h2>
+
+<table>
+    <tr>
+        <th>URL</th>
+        <th>Score</th>
+        <th>Status</th>
+        <th>Date</th>
+    </tr>
+
+    {% for row in history %}
+    <tr>
+        <td>{{ row[0] }}</td>
+        <td>{{ row[1] }}%</td>
+        <td class="{{ row[2]|lower }}">{{ row[2] }}</td>
+        <td>{{ row[3] }}</td>
+    </tr>
+    {% endfor %}
+
+</table>
+
+<br>
+<a href="/predict">
+    <button>Check Another URL</button>
+</a>
+
+</body>
+</html>
