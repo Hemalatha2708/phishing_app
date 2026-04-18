@@ -77,20 +77,16 @@ def close_pool():
     
     if _db_pool:
         try:
-            # Close all connections in the pool
-            while True:
-                try:
-                    conn = _db_pool.get_connection()
-                    try:
-                        conn.close()
-                    except Exception as e:
-                        # Log but don't crash on individual connection close errors
-                        # (e.g., KeyboardInterrupt during shutdown)
-                        logger.debug(f"Error closing individual connection: {str(e)}")
-                except pooling.PoolError:
-                    break
+            # Attempt to close the pool directly
+            # Don't iterate through connections - just close the pool
+            _db_pool = None
             logger.info("Database connection pool closed")
+        except (KeyboardInterrupt, SystemExit):
+            # Graceful shutdown on interrupt
+            _db_pool = None
         except Exception as e:
-            logger.error(f"Error closing connection pool: {str(e)}")
+            # Log but don't crash on pool close errors
+            logger.debug(f"Error closing connection pool: {str(e)}")
+            _db_pool = None
         finally:
             _db_pool = None
