@@ -22,6 +22,7 @@
         <h2>Login</h2>
 
         <form autocomplete="off" method="POST" action="{{ url_for('login') }}">
+            {{ csrf_token() }}
             <input type="text" name="fakeuser" style="display:none">
             <input type="password" name="fakepass" style="display:none">
 
@@ -68,7 +69,7 @@ function closeAlert() {
 
 {% if error %}
 <script>
-showAlert("❌ Wrong username or password!");
+showAlert("❌ {{ error }}");
 </script>
 {% endif %}
 </body>
