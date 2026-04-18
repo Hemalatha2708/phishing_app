@@ -304,35 +304,16 @@ def internal_error(error):
 
 
 # =========================
-# APP LIFECYCLE HANDLERS
-# =========================
-
-@app.before_request
-def before_request():
-    """Initialize database pool before first request"""
-    try:
-        init_db_pool()
-    except Exception as e:
-        logger.error(f"Failed to initialize database pool: {str(e)}")
-
-
-@app.teardown_appcontext
-def teardown_app(exception):
-    """Close database pool on app shutdown"""
-    if exception:
-        logger.error(f"App context teardown due to exception: {str(exception)}")
-    close_pool()
-
-
-# =========================
 # MAIN
 # =========================
 
 if __name__ == "__main__":
     try:
-        # Initialize database pool
+        # Initialize database pool ONCE at startup
         init_db_pool()
-        app.run(debug=config.DEBUG, host='127.0.0.1', port=5000)
+        logger.info("Application starting...")
+        # Disable threading on Windows to avoid socket errors in werkzeug
+        app.run(debug=config.DEBUG, host='127.0.0.1', port=5000, threaded=False, use_reloader=False)
     except Exception as e:
         logger.error(f"Failed to start application: {str(e)}")
         raise

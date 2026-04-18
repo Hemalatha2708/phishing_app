@@ -22,7 +22,7 @@
         <h2>Login</h2>
 
         <form autocomplete="off" method="POST" action="{{ url_for('login') }}">
-            {{ csrf_token() }}
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <input type="text" name="fakeuser" style="display:none">
             <input type="password" name="fakepass" style="display:none">
 

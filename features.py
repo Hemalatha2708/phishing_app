@@ -31,21 +31,18 @@ def validate_url(url):
     
     url = url.strip()
     
-    if len(url) < 5:
-        return False, "URL is too short"
+    if len(url) < 1:
+        return False, "URL is empty"
     
-    if len(url) > 2048:
-        return False, "URL is too long"
+    # Allow very long URLs for training data compatibility
+    # Production app can enforce stricter limits
+    if len(url) > 100000:
+        return False, "URL is excessively long"
     
-    if not (url.startswith('http://') or url.startswith('https://')):
-        return False, "URL must start with http:// or https://"
-    
-    try:
-        result = urlparse(url)
-        if not result.netloc:
-            return False, "URL must have a valid domain"
-    except Exception as e:
-        return False, f"Invalid URL format: {str(e)}"
+    # Allow URLs without http:// or https:// prefix (will be auto-added)
+    # This is more lenient for training data compatibility
+    if not ('.' in url or ':' in url):
+        return False, "URL must contain domain or port"
     
     return True, None
 
@@ -69,6 +66,10 @@ def extract_features(url):
         raise ValueError(error_msg)
     
     url = url.strip()
+    
+    # Normalize URL: add http:// if no protocol
+    if not (url.startswith('http://') or url.startswith('https://')):
+        url = 'http://' + url
     
     try:
         domain = urlparse(url).netloc
