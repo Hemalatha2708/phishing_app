@@ -5,12 +5,13 @@ Main Flask application for URL classification using ML models
 """
 
 import logging
+import pickle
+import os
 from flask import Flask, render_template, request, redirect, session, url_for
 from flask_wtf.csrf import CSRFProtect
-import pickle
 
 from auth import register_user, login_user
-from db import get_db
+from db import get_db, init_db_pool, close_pool
 from features import extract_features, get_risk_reasons
 from config import config
 from validation import sanitize_string
@@ -31,19 +32,44 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = config.SECRET_KEY
 csrf = CSRFProtect(app)
 
-# Load ML models with error handling
-try:
-    rf_model = pickle.load(open(config.MODEL_PATH_RF, "rb"))
-    xgb_model = pickle.load(open(config.MODEL_PATH_XGB, "rb"))
-    logger.info("ML models loaded successfully")
-except FileNotFoundError as e:
-    logger.error(f"Model file not found: {str(e)}")
-    rf_model = None
-    xgb_model = None
-except Exception as e:
-    logger.error(f"Error loading models: {str(e)}")
-    rf_model = None
-    xgb_model = None
+# Global model variables (lazy-loaded on first use)
+_rf_model = None
+_xgb_model = None
+
+
+def load_models():
+    """
+    Load ML models lazily on first use instead of at startup.
+    This improves app startup time significantly.
+    
+    Returns:
+        tuple: (rf_model, xgb_model) or (None, None) if loading fails
+    """
+    global _rf_model, _xgb_model
+    
+    if _rf_model is not None and _xgb_model is not None:
+        return _rf_model, _xgb_model
+    
+    try:
+        if not os.path.exists(config.MODEL_PATH_RF):
+            logger.error(f"Random Forest model not found at {config.MODEL_PATH_RF}")
+            return None, None
+        
+        if not os.path.exists(config.MODEL_PATH_XGB):
+            logger.error(f"XGBoost model not found at {config.MODEL_PATH_XGB}")
+            return None, None
+        
+        _rf_model = pickle.load(open(config.MODEL_PATH_RF, "rb"))
+        _xgb_model = pickle.load(open(config.MODEL_PATH_XGB, "rb"))
+        logger.info("ML models loaded successfully on first use")
+        return _rf_model, _xgb_model
+    
+    except FileNotFoundError as e:
+        logger.error(f"Model file not found: {str(e)}")
+        return None, None
+    except Exception as e:
+        logger.error(f"Error loading models: {str(e)}")
+        return None, None
 
 
 # =========================
@@ -150,7 +176,9 @@ def result():
         if not url:
             return render_template('result.html', error="Please enter a URL")
         
-        # Check if models are loaded
+        # Load models lazily
+        rf_model, xgb_model = load_models()
+        
         if not rf_model or not xgb_model:
             logger.error("ML models not loaded")
             return render_template('result.html', error="ML models not available. Please contact support.")
@@ -276,8 +304,38 @@ def internal_error(error):
 
 
 # =========================
+# APP LIFECYCLE HANDLERS
+# =========================
+
+@app.before_request
+def before_request():
+    """Initialize database pool before first request"""
+    try:
+        init_db_pool()
+    except Exception as e:
+        logger.error(f"Failed to initialize database pool: {str(e)}")
+
+
+@app.teardown_appcontext
+def teardown_app(exception):
+    """Close database pool on app shutdown"""
+    if exception:
+        logger.error(f"App context teardown due to exception: {str(exception)}")
+    close_pool()
+
+
+# =========================
 # MAIN
 # =========================
 
 if __name__ == "__main__":
-    app.run(debug=config.DEBUG, host='127.0.0.1', port=5000)
+    try:
+        # Initialize database pool
+        init_db_pool()
+        app.run(debug=config.DEBUG, host='127.0.0.1', port=5000)
+    except Exception as e:
+        logger.error(f"Failed to start application: {str(e)}")
+        raise
+    finally:
+        # Cleanup
+        close_pool()
