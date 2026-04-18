@@ -1,138 +1,240 @@
-from flask import Flask, render_template, request, redirect, session
-from features import extract_features
-from model import predict
+
+from flask import Flask, render_template, request, redirect, session,url_for
+import pickle
+import re
+from urllib.parse import urlparse
 from auth import register_user, login_user
 from db import get_db
-import csv
+rf_model = pickle.load(open("rf_model.pkl", "rb"))
+xgb_model = pickle.load(open("xgb_model.pkl", "rb"))
+# =========================
+# FEATURE EXTRACTION
+# =========================
+def extract_features(url):
+    features = []
+    from urllib.parse import urlparse
+    import re
+
+    domain = urlparse(url).netloc
+
+    # Basic
+    features.append(len(url))
+    features.append(url.count('.'))
+    features.append(url.count('/'))
+
+    # Suspicious symbols
+    features.append(url.count('@'))
+    features.append(url.count('-'))
+    features.append(url.count('='))
+    features.append(url.count('?'))
+
+    # Digits & special chars
+    features.append(sum(c.isdigit() for c in url))
+    features.append(sum(not c.isalnum() for c in url))
+
+    # Domain features
+    features.append(len(domain))
+    features.append(domain.count('.'))
+
+    # IP address
+    features.append(1 if re.search(r'(\d{1,3}\.){3}\d{1,3}', url) else 0)
+
+    # HTTPS
+    features.append(1 if url.startswith("https") else 0)
+
+    # Keywords (STRONG SIGNAL)
+    keywords = ['login','secure','verify','account','update','bank','signin','confirm','password']
+    features.append(sum(word in url.lower() for word in keywords))
+
+    # Shorteners
+    shorteners = ['bit.ly','tinyurl','goo.gl','t.co','rb.gy']
+    features.append(1 if any(s in url for s in shorteners) else 0)
+
+    # Suspicious TLDs (NEW 🔥)
+    tlds = ['.tk','.ml','.ga','.cf','.gq']
+    features.append(1 if any(t in url for t in tlds) else 0)
+
+    return features
 
 app = Flask(__name__)
 app.secret_key = "secret123"
+
+# ✅ HOME PAGE
 @app.route('/')
 def index():
     return redirect('/home')
-from flask import Flask, render_template, request, redirect, session, flash
-from auth import login_user
 
-app = Flask(__name__)
-app.secret_key = "your_secret_key"
-
-@app.route('/login', methods=['GET','POST'])
-def login():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-
-        user = login_user(username, password)
-        if user:
-            session['user_id'] = user['id']  # use id from profiles
-            return redirect('/predict')      # 🔹 go directly to predict page
-        else:
-            flash("Invalid username or password", "danger")
-            return redirect('/login')
-
-    return render_template('login.html')
-
-@app.route('/dashboard', methods=['GET','POST'])
-def dashboard():
-    if 'user_id' not in session:
-        return redirect('/')
-
-    score = None
-    status = None
-    color = None
-
-    if request.method == 'POST':
-        url = request.form['url']
-        features = extract_features(url)
-        result, score = predict(features)
-
-        # ✅ KEEP THIS INSIDE POST
-        if score < 40:
-            status = "Safe"
-            color = "#22c55e"
-        elif score < 70:
-            status = "Suspicious"
-            color = "#f59e0b"
-        else:
-            status = "Dangerous"
-            color = "#ef4444"
-
-        # ✅ SAVE TO DB
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute(
-            "INSERT INTO history (user_id, url, score, status) VALUES (%s,%s,%s,%s)",
-            (session['user_id'], url, score, status)
-        )
-        db.commit()
-        cursor.close()
-        db.close()
-
-    # ✅ FETCH HISTORY (outside POST is correct)
-    db = get_db()
-    cursor = db.cursor()
-    cursor.execute(
-        "SELECT url, score, status, created_at FROM history WHERE user_id=%s",
-        (session['user_id'],)
-    )
-    history = cursor.fetchall()
-    cursor.close()
-    db.close()
-
-    return render_template(
-        'dashboard.html',
-        score=score,
-        status=status,
-        color=color,
-        history=history
-    )
 @app.route('/home')
 def home():
     return render_template('home.html')
-   
 
 
+# ✅ LOGIN
+from auth import login_user
 
- 
-@app.route('/register', methods=['GET','POST'])
+
+from flask import session, redirect, url_for, render_template
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        user = login_user(username, password)
+
+        if user:
+            session['user_id'] = user['id'] 
+            return redirect(url_for('predict_page'))
+        else:
+            session['error'] = "Wrong username or password"   # ✅ store message
+            return redirect(url_for('login'))  # redirect (important)
+
+    error = session.pop('error', None)  # ✅ get once
+    return render_template('login.html', error=error)
+@app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        register_user(
-            request.form['username'],
-            request.form['email'],
-            request.form['password']
-        )
-        return redirect('/')
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+
+        result = register_user(username, email, password)
+
+        if result == "exists":
+            return render_template('register.html', exists=True)
+
+        return render_template('register.html', success=True)
+
     return render_template('register.html')
+
+
+
+
+# ✅ PREDICT PAGE
 @app.route('/predict')
 def predict_page():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
     return render_template('predict.html')
 
 
-@app.route('/result', methods=['POST'])
+@app.route('/result', methods=['GET','POST'])
 def result():
-    # check if user is logged in
     if 'user_id' not in session:
         return redirect('/login')
 
-    # get URL from form
     url = request.form.get('url', '').strip()
+
     result = None
     warning = None
+    score = None
+    reasons = []   # ✅ ADD HERE
 
     if url:
+        # ✅ extract features
+        features = extract_features(url)
+
+        # ✅ model predictions
+        rf_score = rf_model.predict_proba([features])[0][1]
+        xgb_score = xgb_model.predict_proba([features])[0][1]
+
+        # ✅ final score
+        score = (rf_score + xgb_score) / 2 * 100
+        score = round(score, 2)
+
+        # ✅ classification
+        if score < 50:
+            result = "Safe"
+        elif score < 75:
+            result = "Suspicious"
+        else:
+            result = "Dangerous"
+        from db import get_db
+
+        db = get_db()
+        cursor = db.cursor()
+
+        cursor.execute(
+            "INSERT INTO history (user_id, url, score, status) VALUES (%s, %s, %s, %s)",
+            (session['user_id'], url, score, result)
+        )
+
+        db.commit()
+        cursor.close()
+        db.close()
+        # 🚀 ADD REASONS HERE (INSIDE if url)
         url_lower = url.lower()
 
-        if any(word in url_lower for word in ["phish", "malware", "danger"]):
-            result = "Phishing"
-            warning = "⚠️ This link is dangerous! Do not click it."
-        elif url_lower.startswith("https://"):
-            result = "Safe"
+        keywords = ['login','verify','account','update','bank','signin']
+        for word in keywords:
+            if word in url_lower:
+                reasons.append(f"Contains suspicious keyword: '{word}'")
+
+        if any(s in url_lower for s in ['bit.ly','tinyurl','t.co','goo.gl']):
+            reasons.append("Uses URL shortener")
+
+        import re
+        if re.search(r'(\d{1,3}\.){3}\d{1,3}', url):
+            reasons.append("Contains IP address")
+
+        if url.count('.') > 3:
+            reasons.append("Too many subdomains")
+
+        if len(url) > 75:
+            reasons.append("URL is too long")
+
+        if '@' in url:
+            reasons.append("Contains '@' symbol")
+
+        if '-' in url:
+            reasons.append("Contains '-' in domain")
+
+        if url.startswith("http://"):
+            reasons.append("Not using HTTPS")
+
+        if sum(c.isdigit() for c in url) > 5:
+            reasons.append("Too many numbers in URL")
+
+        if any(t in url_lower for t in ['.tk','.ml','.ga','.cf','.gq']):
+            reasons.append("Suspicious domain extension")
+
+        # ✅ LIMIT reasons (clean UI)
+        reasons = reasons[:3]
+
+        if result == "Safe":
+            reasons = ["No major risks detected"]   # ✅ only this message
         else:
-            result = "Suspicious"
-            warning = "⚠️ Be careful with this link!"
+            if not reasons:
+                reasons = ["Potential risks detected"]  
+    return render_template(
+        'result.html',
+        url=url,
+        result=result,
+        warning=warning,
+        score=score,
+        reasons=reasons   # ✅ PASS HERE
+    )
+@app.route('/history')
+def history():
+    if 'user_id' not in session:
+        return redirect('/login')
 
-    return render_template('result.html', url=url, result=result, warning=warning)
+    from db import get_db
 
+    db = get_db()
+    cursor = db.cursor()
+
+    cursor.execute(
+        "SELECT url, score, status, created_at FROM history WHERE user_id=%s ORDER BY created_at DESC",
+        (session['user_id'],)
+    )
+
+    history_data = cursor.fetchall()
+
+    cursor.close()
+    db.close()
+
+    return render_template('history.html', history=history_data)
 if __name__ == "__main__":
     app.run(debug=True)

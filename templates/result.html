@@ -2,6 +2,7 @@
 <html>
 <head>
     <title>Result</title>
+
     <style>
         body {
             margin: 0;
@@ -9,53 +10,116 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: Arial;
+            font-family: 'Segoe UI', sans-serif;
             color: white;
+            overflow: hidden;
         }
 
-        .box {
+        /* Background Images */
+        .safe-bg {
+            background: url("{{ url_for('static', filename='images/safe.jpg') }}") no-repeat center/cover;
+        }
+
+        .warning-bg {
+            background: url("{{ url_for('static', filename='images/suspicious.jpg') }}") no-repeat center/cover;
+        }
+
+        .danger-bg {
+            background: url("{{ url_for('static', filename='images/danger.jpg') }}") no-repeat center/cover;
+        }
+
+        /* Blur Overlay */
+        .overlay {
+            position: absolute;
+            inset: 0;
+            backdrop-filter: blur(15px);
+            background: rgba(0,0,0,0.6);
+        }
+
+        /* Content Card */
+        .card {
+            position: relative;
+            z-index: 2;
             padding: 40px;
-            border-radius: 15px;
+            border-radius: 20px;
             text-align: center;
-            width: 60%;
-            max-width: 500px;
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(15px);
+            width: 400px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
 
-        .safe { background: #22c55e; }
-        .warning { background: #facc15; color: black; }
-        .danger { background: #ef4444; }
-
-        a {
-            color: white;
-            font-weight: bold;
-            word-break: break-all;
+        h2 {
+            font-size: 32px;
+            margin-bottom: 10px;
         }
 
-        .warning-text {
+        .safe { color: #22c55e; }
+        .warning { color: #facc15; }
+        .danger { color: #ef4444; }
+
+        .score {
             margin-top: 15px;
+            font-size: 20px;
+        }
+
+        .btn {
+            margin-top: 25px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            background: #38bdf8;
+            color: black;
             font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            background: #0ea5e9;
         }
     </style>
 </head>
-<body>
 
-<div class="auth-container">
-    <div class="auth-card
+<body class="
+    {% if result == 'Safe' %}safe-bg
+    {% elif result == 'Suspicious' %}warning-bg
+    {% else %}danger-bg
+    {% endif %}
+">
+
+<div class="overlay"></div>
+
+<div class="card">
+
+    <h2 class="
         {% if result == 'Safe' %}safe
         {% elif result == 'Suspicious' %}warning
         {% else %}danger
-        {% endif %}">
-        
-        <h2>{{ result }}</h2>
-
-        <p>
-            <a href="{{ url }}" target="_blank">{{ url }}</a>
-        </p>
-
-        {% if warning %}
-            <p class="warning-text">{{ warning }}</p>
         {% endif %}
+    ">
+        {{ result }} URL
+    </h2>
+
+    {% if score is not none %}
+        <div class="score">
+            Risk Score: <b>{{ score }}%</b>
+        </div>
+    {% endif %}
+    {% if reasons %}
+    <div style="margin-top:20px; text-align:left;">
+        <b>⚠ Reasons:</b>
+        <ul>
+            {% for r in reasons %}
+                <li>{{ r }}</li>
+            {% endfor %}
+        </ul>
     </div>
+    {% endif %}
+
+    <a href="/predict" class="btn">Check Another URL</a>
+
 </div>
 
 </body>
