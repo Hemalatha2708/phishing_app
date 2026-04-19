@@ -98,11 +98,9 @@ def login():
     return render_template('login.html', error=error)
 
 @app.route('/register', methods=['GET', 'POST'])
+
 def register():
     errors = []
-    success = None
-    exists = None
-
     username = ""
     email = ""
 
@@ -112,88 +110,33 @@ def register():
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '')
 
-        # ================= VALIDATION =================
+        # VALIDATION
         if not re.match(r'^[A-Za-z0-9_]{6,15}$', username):
-            errors.append("Username must be 6–15 characters (letters, numbers, _)")
+            errors.append("Username must be 6–15 characters")
 
-        email_pattern = r'^[\w\.-]+@(gmail\.com|outlook\.com|yahoo\.com|hotmail\.com)$'
-        if not re.match(email_pattern, email):
-            errors.append("Use valid email domain (gmail.com, outlook.com, yahoo.com)")
+        if not re.match(r'^[\w\.-]+@(gmail\.com|outlook\.com|yahoo\.com|hotmail\.com)$', email):
+            errors.append("Invalid email domain")
 
         if len(password) < 8:
             errors.append("Password must be at least 8 characters")
 
-        if not re.search(r'[A-Z]', password):
-            errors.append("Password must include 1 uppercase letter")
-
-        if not re.search(r'[a-z]', password):
-            errors.append("Password must include 1 lowercase letter")
-
-        if not re.search(r'[0-9]', password):
-            errors.append("Password must include 1 number")
-
-        if not re.search(r'[!@#$%^&*(),.?\":{}|<>]', password):
-            errors.append("Password must include 1 special character")
-
-        # ================= SHOW ERRORS =================
+        # SHOW ERRORS
         if errors:
-            return render_template(
-                "register.html",
-                errors=errors,
-                username=username,
-                email=email
-            )
+            return render_template("register.html", errors=errors, username=username, email=email)
 
-        # ================= DB INSERT =================
+        # DB
         result = register_user(username, email, password)
 
         if result == "username_exists":
-            return render_template("register.html", error="Username already exists")
+            return render_template("register.html", errors=["Username already exists"], username=username, email=email)
 
         if result == "email_exists":
-            return render_template("register.html", error="Email already registered")
+            return render_template("register.html", errors=["Email already registered"], username=username, email=email)
 
         if result == "success":
             return redirect(url_for('login'))
-        return render_template(
-            "register.html",
-            errors=errors,
-            username=username,
-            email=email
-        )
+
     return render_template("register.html")
-def register_user(username, email, password):
-    db = get_db()
-    cursor = db.cursor()
-
-    try:
-        # check username exists
-        cursor.execute("SELECT id FROM profile WHERE username=%s", (username,))
-        if cursor.fetchone():
-            return "username_exists"
-
-        # check email exists
-        cursor.execute("SELECT id FROM profile WHERE email=%s", (email,))
-        if cursor.fetchone():
-            return "email_exists"
-
-        # insert user
-        cursor.execute(
-            "INSERT INTO profile (username, email, password, created_at) VALUES (%s, %s, %s, NOW())",
-            (username, email, password)
-        )
-
-        db.commit()
-        return "success"
-
-    except Exception as e:
-        print("DB ERROR:", e)
-        return "error"
-
-    finally:
-        cursor.close()
-        db.close()
-
 
 
 # ✅ PREDICT PAGE
