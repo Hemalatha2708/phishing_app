@@ -127,6 +127,5 @@ else:
 # 7. Save Models
 # ==============================
 pickle.dump(rf_model, open("rf_model.pkl", "wb"))
-pickle.dump(xgb_model, open("xgb_model.pkl", "wb"))
-
+xgb_model.save_model("xgb_model.json")
 print("\n✅ Both models saved successfully!")

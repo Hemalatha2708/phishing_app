@@ -11,54 +11,77 @@
 
         <h2>Create Account</h2>
 
-        <form method="post">
-            <input type="text" name="username" placeholder="Username" autocomplete="off" required>
-            <input type="password" name="password" id="password" placeholder="Password" autocomplete="new-password" required>
-            <input type="email" name="email" placeholder="Email" required>
+    <form method="post"  autocomplete="off">
 
-            <button type="submit">Sign Up</button>
-        </form>
+    <input type="text" name="username"
+        placeholder="Username"
+        value="{{ username or '' }}"
+        autocomplete="off"
+        required>
 
-        <p>
-            Already have an account? 
-            <a href="{{ url_for('login') }}">Login</a>
-        </p>
+    <input type="password" name="password"
+        placeholder="Password"
+        autocomplete="off"
+        required>
+
+    <input type="email" name="email"
+        placeholder="Email"
+        value="{{ email or '' }}"
+        autocomplete="off"
+        required>
+
+    <button type="submit">Sign Up</button>
+    </form>
 
     </div>
 </div>
 
-<!-- Custom Alert -->
-<div id="customAlert" class="custom-alert">
-    <p id="alertMsg"></p>
+<!-- ALERT BOX -->
+<!-- ALERT BOX -->
+<div id="customAlert" class="custom-alert" style="display:none; position:fixed; top:20px; right:50px; padding:15px; border-radius:8px; color:white;">
+    <span id="alertMsg"></span>
+    <br><br>
     <button onclick="closeAlert()">OK</button>
 </div>
 
 <script>
-function showAlert(message, redirect=false) {
-    document.getElementById("alertMsg").innerText = message;
-    document.getElementById("customAlert").style.display = "block";
-    window.shouldRedirect = redirect;
+function showAlert(message, redirect=false){
+    const box = document.getElementById("customAlert");
+    const msg = document.getElementById("alertMsg");
+
+    box.style.display = "block";
+    msg.innerText = message;
+
+    box.style.background = "#111";  // FORCE BLACK ALWAYS
+
+    box.dataset.redirect = redirect;
 }
 
-function closeAlert() {
-    document.getElementById("customAlert").style.display = "none";
-    if (window.shouldRedirect) {
+function closeAlert(){
+    const box = document.getElementById("customAlert");
+    box.style.display = "none";
+
+    if(box.dataset.redirect === "true"){
         window.location.href = "/login";
     }
 }
 </script>
 
+{% if errors %}
+<script>
+showAlert("{{ errors[0] }}");
+</script>
+{% endif %}
+
 {% if exists %}
 <script>
-showAlert("❌ Username already exists!", true);
+showAlert("Username already exists!");
 </script>
 {% endif %}
 
 {% if success %}
 <script>
-showAlert("✅ Account created successfully!", true);
+document.querySelector("form").reset();
+showAlert("Account created successfully!", true);
 </script>
 {% endif %}
-
-</body>
-</html>

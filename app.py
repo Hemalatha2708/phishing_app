@@ -2,11 +2,15 @@
 from flask import Flask, render_template, request, redirect, session,url_for
 import pickle
 import re
+import numpy as np
 from urllib.parse import urlparse
 from auth import register_user, login_user
 from db import get_db
 rf_model = pickle.load(open("rf_model.pkl", "rb"))
-xgb_model = pickle.load(open("xgb_model.pkl", "rb"))
+import xgboost as xgb
+
+xgb_model = xgb.Booster()
+xgb_model.load_model("xgb_model.json")
 # =========================
 # FEATURE EXTRACTION
 # =========================
@@ -92,22 +96,103 @@ def login():
 
     error = session.pop('error', None)  # ✅ get once
     return render_template('login.html', error=error)
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    if request.method == 'POST':
-        username = request.form['username']
-        email = request.form['email']
-        password = request.form['password']
+    errors = []
+    success = None
+    exists = None
 
+    username = ""
+    email = ""
+
+    if request.method == 'POST':
+
+        username = request.form.get('username', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '')
+
+        # ================= VALIDATION =================
+        if not re.match(r'^[A-Za-z0-9_]{6,15}$', username):
+            errors.append("Username must be 6–15 characters (letters, numbers, _)")
+
+        email_pattern = r'^[\w\.-]+@(gmail\.com|outlook\.com|yahoo\.com|hotmail\.com)$'
+        if not re.match(email_pattern, email):
+            errors.append("Use valid email domain (gmail.com, outlook.com, yahoo.com)")
+
+        if len(password) < 8:
+            errors.append("Password must be at least 8 characters")
+
+        if not re.search(r'[A-Z]', password):
+            errors.append("Password must include 1 uppercase letter")
+
+        if not re.search(r'[a-z]', password):
+            errors.append("Password must include 1 lowercase letter")
+
+        if not re.search(r'[0-9]', password):
+            errors.append("Password must include 1 number")
+
+        if not re.search(r'[!@#$%^&*(),.?\":{}|<>]', password):
+            errors.append("Password must include 1 special character")
+
+        # ================= SHOW ERRORS =================
+        if errors:
+            return render_template(
+                "register.html",
+                errors=errors,
+                username=username,
+                email=email
+            )
+
+        # ================= DB INSERT =================
         result = register_user(username, email, password)
 
-        if result == "exists":
-            return render_template('register.html', exists=True)
+        if result == "username_exists":
+            return render_template("register.html", error="Username already exists")
 
-        return render_template('register.html', success=True)
+        if result == "email_exists":
+            return render_template("register.html", error="Email already registered")
 
-    return render_template('register.html')
+        if result == "success":
+            return redirect(url_for('login'))
+        return render_template(
+            "register.html",
+            errors=errors,
+            username=username,
+            email=email
+        )
+    return render_template("register.html")
+def register_user(username, email, password):
+    db = get_db()
+    cursor = db.cursor()
 
+    try:
+        # check username exists
+        cursor.execute("SELECT id FROM profile WHERE username=%s", (username,))
+        if cursor.fetchone():
+            return "username_exists"
+
+        # check email exists
+        cursor.execute("SELECT id FROM profile WHERE email=%s", (email,))
+        if cursor.fetchone():
+            return "email_exists"
+
+        # insert user
+        cursor.execute(
+            "INSERT INTO profile (username, email, password, created_at) VALUES (%s, %s, %s, NOW())",
+            (username, email, password)
+        )
+
+        db.commit()
+        return "success"
+
+    except Exception as e:
+        print("DB ERROR:", e)
+        return "error"
+
+    finally:
+        cursor.close()
+        db.close()
 
 
 
@@ -134,10 +219,11 @@ def result():
     if url:
         # ✅ extract features
         features = extract_features(url)
+        dmatrix = xgb.DMatrix([features])
 
         # ✅ model predictions
         rf_score = rf_model.predict_proba([features])[0][1]
-        xgb_score = xgb_model.predict_proba([features])[0][1]
+        xgb_score = xgb_model.predict(dmatrix)[0]
 
         # ✅ final score
         score = (rf_score + xgb_score) / 2 * 100
