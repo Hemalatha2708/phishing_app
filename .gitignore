@@ -13,3 +13,5 @@ dist/
 build/
 .pyc
 __pycache__/
+rf_model.pkl
+data/
