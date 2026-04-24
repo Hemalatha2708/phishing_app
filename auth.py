@@ -4,6 +4,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from db import get_db
 from werkzeug.security import generate_password_hash, check_password_hash
 
+
+
 def register_user(username, email, password):
     db = get_db()
     cursor = db.cursor(dictionary=True)

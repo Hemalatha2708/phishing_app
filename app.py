@@ -134,7 +134,7 @@ def register():
             return render_template("register.html", errors=["Email already registered"], username=username, email=email)
 
         if result == "success":
-            return redirect(url_for('login'))
+           return render_template("register.html", success=True)
 
     return render_template("register.html")
 
@@ -265,5 +265,6 @@ def history():
     db.close()
 
     return render_template('history.html', history=history_data)
+
 if __name__ == "__main__":
     app.run(debug=True)
