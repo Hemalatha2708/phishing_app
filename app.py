@@ -70,7 +70,10 @@ def index():
 
 @app.route('/home')
 def home():
-    return render_template('home.html')
+    return render_template(
+        'home.html',
+        logged_in=('user_id' in session)
+    )
 
 
 # ✅ LOGIN
@@ -84,7 +87,6 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-
         user = login_user(username, password)
 
         if user:
@@ -140,17 +142,16 @@ def register():
 
 
 # ✅ PREDICT PAGE
+# ✅ PREDICT PAGE
+
 @app.route('/predict')
 def predict_page():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
     return render_template('predict.html')
 
 
 @app.route('/result', methods=['GET','POST'])
 def result():
-    if 'user_id' not in session:
-        return redirect('/login')
+    
 
     url = request.form.get('url', '').strip()
 
@@ -247,9 +248,12 @@ def result():
 @app.route('/history')
 def history():
     if 'user_id' not in session:
-        return redirect('/login')
-
-    from db import get_db
+        return '''
+        <script>
+            alert("Please signup to view history.");
+            window.location.href = "/login";
+        </script>
+        '''
 
     db = get_db()
     cursor = db.cursor()
@@ -265,6 +269,21 @@ def history():
     db.close()
 
     return render_template('history.html', history=history_data)
+@app.route('/logout')
+def logout():
+    session.clear()
 
+    return redirect(url_for('register'))
+@app.route('/check-history')
+def check_history():
+    if 'user_id' in session:
+        return {'logged_in': True}
+    else:
+        return {'logged_in': False}
+@app.route('/check-login')
+def check_login():
+    return {
+        'logged_in': 'user_id' in session
+    }    
 if __name__ == "__main__":
     app.run(debug=True)
